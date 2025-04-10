@@ -8,12 +8,16 @@ import { dbConfig } from './configs';
 import { AuthModule } from './modules/auth/auth.module';
 import { MorganMiddleware } from './commons';
 import { RoomTypeModule } from './modules/room-type/room-type.module';
+import { RoomModule } from './modules/room/room.module';
+import { CustomerModule } from './modules/customer/customer.module';
 
 @Module({
   imports: [
     UserModule,
     AuthModule,
     RoomTypeModule,
+    RoomModule,
+    CustomerModule,
     ConfigModule.forRoot({
       load: [dbConfig],
     }),
