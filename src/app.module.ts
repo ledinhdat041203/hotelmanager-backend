@@ -7,11 +7,13 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { dbConfig } from './configs';
 import { AuthModule } from './modules/auth/auth.module';
 import { MorganMiddleware } from './commons';
+import { RoomTypeModule } from './modules/room-type/room-type.module';
 
 @Module({
   imports: [
     UserModule,
     AuthModule,
+    RoomTypeModule,
     ConfigModule.forRoot({
       load: [dbConfig],
     }),
