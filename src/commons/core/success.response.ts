@@ -54,3 +54,4 @@ export class CreatedResponse<T> extends ServiceSuccess<T> {
     super({ message, statusCode: HttpStatus.CREATED, data, code });
   }
 }
+
