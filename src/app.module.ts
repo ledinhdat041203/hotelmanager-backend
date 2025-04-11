@@ -10,6 +10,9 @@ import { MorganMiddleware } from './commons';
 import { RoomTypeModule } from './modules/room-type/room-type.module';
 import { RoomModule } from './modules/room/room.module';
 import { CustomerModule } from './modules/customer/customer.module';
+import { ServiceModule } from './modules/service/service.module';
+import { Booking } from './modules/booking/booking.entity';
+import { BookingModule } from './modules/booking/booking.module';
 
 @Module({
   imports: [
@@ -18,6 +21,8 @@ import { CustomerModule } from './modules/customer/customer.module';
     RoomTypeModule,
     RoomModule,
     CustomerModule,
+    ServiceModule,
+    BookingModule,
     ConfigModule.forRoot({
       load: [dbConfig],
     }),

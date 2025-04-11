@@ -29,7 +29,7 @@ export class RoomTypeService {
   async findOne(roomTypeId: string): Promise<RoomType> {
     const found = await this.roomTypeRepo.findOneBy({ roomTypeId });
     if (!found)
-      throw new NotFoundException({ message: 'Không tìm thấy phòng' });
+      throw new NotFoundException({ message: 'Không tìm thấy dịch vụ' });
     return found;
   }
 
