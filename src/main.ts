@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import helmet from 'helmet'
+import helmet from 'helmet';
 import * as cookieParser from 'cookie-parser';
 import * as compression from 'compression';
 import { AllExceptionsFilter } from './commons';
@@ -18,8 +18,9 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
   app.enableCors({
-    origin: '*',
+    origin: 'http://localhost:3000',
     methods: ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'],
+    credentials: true,
   });
 
   await AppDataSource.initialize()

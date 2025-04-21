@@ -4,6 +4,8 @@ import { Injectable } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { BadRequestException, UnAuthorizedException } from '@/commons';
 import { use } from 'passport';
+import { plainToInstance } from 'class-transformer';
+import { User } from '@/modules/user/user.entity';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
@@ -31,6 +33,6 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         message: 'Tài khoản của bạn chưa được kích hoạt',
       });
     }
-    return user;
+    return plainToInstance(User, user);
   }
 }
