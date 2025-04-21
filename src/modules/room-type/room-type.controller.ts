@@ -6,6 +6,7 @@ import {
   Param,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { RoomTypeService } from './room-type.service';
@@ -14,6 +15,7 @@ import { plainToInstance } from 'class-transformer';
 import { RoomType } from './room-type.entity';
 import { CreatedResponse, SuccessfullyRespose } from '@/commons';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
+import { searchRoomTypeDto } from './dto/find-room-type.dto';
 
 @ApiTags('Room Type')
 @Controller('room-type')
@@ -42,11 +44,24 @@ export class RoomTypeController {
     });
   }
 
+  @Get('search')
+  @ApiOperation({ summary: 'search room type' })
+  async search(
+    @Query() searchRoomType: searchRoomTypeDto,
+  ): Promise<SuccessfullyRespose<RoomType[]>> {
+    console.log('searchRoomType', searchRoomType);
+    const roomTypes = await this.roomTypeService.search(searchRoomType);
+    return new SuccessfullyRespose({
+      data: plainToInstance(RoomType, roomTypes),
+    });
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get room type by ID' })
   async findOne(
     @Param('id') id: string,
   ): Promise<SuccessfullyRespose<RoomType>> {
+    console.log('id', id);
     const roomType = await this.roomTypeService.findOne(id);
     return new SuccessfullyRespose({
       data: plainToInstance(RoomType, roomType),

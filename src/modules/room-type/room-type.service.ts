@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { RoomType } from './room-type.entity';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { BadRequestException, NotFoundException } from '@/commons';
+
+import { searchRoomTypeDto } from './dto/find-room-type.dto';
 
 @Injectable()
 export class RoomTypeService {
@@ -56,5 +58,30 @@ export class RoomTypeService {
         message: 'Không tìm thấy loại phòng để xoá',
       });
     }
+  }
+
+  async search(searchRoomType: searchRoomTypeDto): Promise<RoomType[]> {
+    const { searchData, status } = searchRoomType;
+
+    const where: any = {};
+    if (searchData) {
+      where.roomTypeName = ILike(`%${searchData}%`);
+    }
+    if (status) {
+      where.status = Number(status);
+    }
+
+    console.log('where', where);
+    const roomTypes = await this.roomTypeRepo.find({ where });
+
+    if (!roomTypes || roomTypes.length === 0) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy loại phòng nào',
+      });
+    }
+
+    console.log('roomTypes', roomTypes.length);
+
+    return roomTypes;
   }
 }
