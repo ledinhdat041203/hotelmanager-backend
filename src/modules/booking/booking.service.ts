@@ -7,6 +7,8 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { Room } from '../room/room.entity';
 import { RoomService } from '../room/room.service';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { UpdateRoomDto } from '../room/dto/update-room.dto';
+import { RoomState } from '@/commons/types/room-state-enum';
 
 @Injectable()
 export class BookingService {
@@ -18,15 +20,15 @@ export class BookingService {
   ) {}
 
   async create(createBookingDto: CreateBookingDto): Promise<Booking> {
-    const { roomId, unitPrice, quantity } = createBookingDto;
+    const { roomId, unitPrice, quantity, checkInDate, checkOutDate, status } =
+      createBookingDto;
 
     const room = await this.roomService.findOne(roomId);
 
-    const total = unitPrice * quantity;
+    // const totalPrice = unitPrice * quantity;
 
     const booking = this.bookingRepo.create({
       ...createBookingDto,
-      total,
       room,
     });
 
@@ -35,6 +37,12 @@ export class BookingService {
     if (!savedBooking) {
       throw new BadRequestException({ message: 'Tạo booking thất bại' });
     }
+
+    const updateRoomDto = new UpdateRoomDto();
+    updateRoomDto.state =
+      status === 'Đã nhận phòng' ? RoomState.IN_USE :  RoomState.PENDING;
+
+    await this.roomService.update(roomId, updateRoomDto);
 
     return savedBooking;
   }
@@ -72,11 +80,6 @@ export class BookingService {
     Object.assign(booking, rest);
 
     if (unitPrice !== undefined) booking.unitPrice = unitPrice;
-    if (quantity !== undefined) booking.quantity = quantity;
-
-    if (booking.unitPrice != null && booking.quantity != null) {
-      booking.total = booking.unitPrice * booking.quantity;
-    }
 
     const updatedBooking = await this.bookingRepo.save(booking);
     if (!updatedBooking) {

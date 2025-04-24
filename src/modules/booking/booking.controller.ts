@@ -25,6 +25,7 @@ export class BookingController {
   async create(
     @Body() createBookingDto: CreateBookingDto,
   ): Promise<CreatedResponse<Booking>> {
+    console.log('create', createBookingDto);
     const newBooking = await this.bookingService.create(createBookingDto);
 
     return new CreatedResponse({

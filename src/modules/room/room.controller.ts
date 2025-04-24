@@ -6,6 +6,7 @@ import {
   Param,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { RoomService } from './room.service';
@@ -14,6 +15,7 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { CreatedResponse, SuccessfullyRespose } from '@/commons';
 import { Room } from './room.entity';
 import { plainToInstance } from 'class-transformer';
+import { searchRoomDto } from './dto/search-room.dto';
 
 @ApiTags('Room')
 @Controller('room')
@@ -33,6 +35,44 @@ export class RoomController {
     });
   }
 
+  @Get('find-by-room-type')
+  @ApiOperation({ summary: 'Get all rooms' })
+  async findByRoomType(
+    @Query('roomTypeId') roomTypeId: string,
+    @Query('status') status: number,
+  ): Promise<SuccessfullyRespose<Room[]>> {
+    const rooms = await this.roomService.findByRoomTypeId(roomTypeId, status);
+
+    return new SuccessfullyRespose({
+      message: 'Lấy danh sách phòng thành công',
+      data: plainToInstance(Room, rooms),
+    });
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'search room' })
+  async search(
+    @Query() searchRoomDto: searchRoomDto,
+  ): Promise<SuccessfullyRespose<Room[]>> {
+    const rooms = await this.roomService.search(searchRoomDto);
+
+    return new SuccessfullyRespose({
+      message: 'Lấy thông tin phòng thành công',
+      data: plainToInstance(Room, rooms),
+    });
+  }
+
+  @Get('find-by-id/:id')
+  @ApiOperation({ summary: 'Get room by ID' })
+  async findOne(@Param('id') id: string): Promise<SuccessfullyRespose<Room>> {
+    const room = await this.roomService.findOne(id);
+
+    return new SuccessfullyRespose({
+      message: 'Lấy thông tin phòng thành công',
+      data: plainToInstance(Room, room),
+    });
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all rooms' })
   async findAll(): Promise<SuccessfullyRespose<Room[]>> {
@@ -41,17 +81,6 @@ export class RoomController {
     return new SuccessfullyRespose({
       message: 'Lấy danh sách phòng thành công',
       data: plainToInstance(Room, rooms),
-    });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get room by ID' })
-  async findOne(@Param('id') id: string): Promise<SuccessfullyRespose<Room>> {
-    const room = await this.roomService.findOne(id);
-
-    return new SuccessfullyRespose({
-      message: 'Lấy thông tin phòng thành công',
-      data: plainToInstance(Room, room),
     });
   }
 

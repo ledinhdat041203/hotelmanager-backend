@@ -30,6 +30,8 @@ export class RoomType {
   })
   status: Status;
 
+  
+
   @OneToMany(() => Room, (room) => room.roomType)
   rooms: Room[];
 }

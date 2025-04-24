@@ -20,7 +20,7 @@ export class CreateBookingDto {
 
   @IsString()
   @IsNotEmpty()
-  cccd: string;
+  cccd?: string;
 
   @IsDateString()
   @IsNotEmpty()
@@ -36,23 +36,26 @@ export class CreateBookingDto {
 
   @IsEnum(BookingType)
   @IsOptional()
-  bookingType?: BookingType = BookingType.BY_HOUR;
+  type?: BookingType = BookingType.BY_HOUR;
 
   @IsEnum(BookingStatus)
   @IsOptional()
   status?: BookingStatus = BookingStatus.PENDING;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  unitPrice: number;
+  unitPrice?: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(1)
-  quantity: number;
+  quantity?: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  total: number;
+  totalPrice?: number;
 
   @IsOptional()
   @IsNumber()
