@@ -1,6 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Room } from '../room/room.entity';
-import { BookingStatus, BookingType } from '@/commons';
+import { BookingStatus, BookingType, Channel } from '@/commons';
 
 @Entity('bookings')
 export class Booking {
@@ -30,7 +30,7 @@ export class Booking {
     enum: BookingType,
     default: BookingType.BY_HOUR,
   })
-  bookingType: BookingType;
+  type: BookingType;
 
   @Column({
     type: 'enum',
@@ -40,10 +40,15 @@ export class Booking {
   status: BookingStatus;
 
   @Column() unitPrice: number;
-  @Column() quantity: number;
-  @Column() total: number;
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  depositAmount: number;
+  @Column() totalPrice: number;
+  @Column({ nullable: true }) depositAmount: number;
+
+  @Column({
+    type: 'enum',
+    enum: Channel,
+    default: Channel.DIRECT,
+  })
+  channel: Channel;
 
   //   @OneToMany(() => BookingServiceItem, (item) => item.booking, {
   //     cascade: true,

@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Room } from './room.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { RoomTypeService } from '../room-type/room-type.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BadRequestException, NotFoundException } from '@/commons';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { searchRoomDto } from './dto/search-room.dto';
 
 @Injectable()
 export class RoomService {
@@ -53,6 +54,25 @@ export class RoomService {
     return room;
   }
 
+  async findByRoomTypeId(roomTypeId: string, status: number): Promise<Room[]> {
+    try {
+      console.log(status);
+      const rooms = await this.roomRepo.find({
+        where: { roomType: { roomTypeId }, status },
+        relations: ['roomType'],
+      });
+
+      if (!rooms || rooms.length === 0) {
+        throw new NotFoundException({
+          message: 'Không tìm thấy phòng nào thuộc loại phòng này',
+        });
+      }
+      return rooms;
+    } catch (error) {
+      throw new BadRequestException({ message: error.message });
+    }
+  }
+
   async update(roomId: string, updateRoomDto: UpdateRoomDto): Promise<Room> {
     const room = await this.findOne(roomId);
 
@@ -67,6 +87,14 @@ export class RoomService {
       if (!roomType)
         throw new NotFoundException({ message: 'Loại phòng không tồn tại' });
       room.roomType = roomType;
+    }
+
+    if (updateRoomDto.status !== undefined) {
+      room.status = updateRoomDto.status;
+    }
+
+    if (updateRoomDto.state !== undefined) {
+      room.state = updateRoomDto.state;
     }
 
     const updatedRoom = await this.roomRepo.save(room);
@@ -91,5 +119,50 @@ export class RoomService {
         message: 'Không tìm thấy phòng để xoá',
       });
     }
+  }
+
+  async search(searchRoom: searchRoomDto): Promise<Room[]> {
+    const { searchData, status, state } = searchRoom;
+
+    const query = this.roomRepo
+      .createQueryBuilder('room')
+      .leftJoinAndSelect('room.roomType', 'roomType')
+      .select([
+        'room.roomId',
+        'room.roomName',
+        'room.status',
+        'room.clean',
+        'room.state',
+        'roomType.roomTypeId',
+        'roomType.roomTypeName',
+        'roomType.priceByDay',
+        'roomType.priceByHour',
+        'roomType.priceOvernight',
+      ]);
+
+    if (searchData) {
+      query.andWhere(
+        '(room.roomName ILIKE :searchData OR roomType.roomTypeName ILIKE :searchData)',
+        { searchData: `%${searchData}%` },
+      );
+    }
+
+    if (state) {
+      query.andWhere('(room.state::text ILIKE :state)', { state });
+    }
+
+    if (status !== undefined && status !== null) {
+      query.andWhere('room.status = :status', { status: Number(status) });
+    }
+
+    const rooms = await query.getMany();
+
+    if (!rooms || rooms.length === 0) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy phòng nào',
+      });
+    }
+
+    return rooms;
   }
 }
