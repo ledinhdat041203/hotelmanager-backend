@@ -31,6 +31,8 @@ async function bootstrap() {
       console.error('Error during Data Source initialization', err);
     });
 
+  await AppDataSource.query('CREATE EXTENSION IF NOT EXISTS unaccent;');
+
   app.useGlobalFilters(new AllExceptionsFilter());
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

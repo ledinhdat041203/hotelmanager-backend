@@ -9,6 +9,8 @@ import { RoomService } from '../room/room.service';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UpdateRoomDto } from '../room/dto/update-room.dto';
 import { RoomState } from '@/commons/types/room-state-enum';
+import { SearchBookingDto } from './dto/seach-booking.dto';
+
 
 @Injectable()
 export class BookingService {
@@ -40,7 +42,7 @@ export class BookingService {
 
     const updateRoomDto = new UpdateRoomDto();
     updateRoomDto.state =
-      status === 'Đã nhận phòng' ? RoomState.IN_USE :  RoomState.PENDING;
+      status === 'Đã nhận phòng' ? RoomState.IN_USE : RoomState.PENDING;
 
     await this.roomService.update(roomId, updateRoomDto);
 
@@ -86,6 +88,69 @@ export class BookingService {
       throw new BadRequestException({ message: 'Cập nhật booking thất bại' });
     }
     return updatedBooking;
+  }
+
+  async findBookedTimeSlots(
+    roomId: string,
+  ): Promise<{ checkInDate: Date; checkOutDate: Date }[]> {
+    const currentDate = new Date();
+
+    const bookings = await this.bookingRepo
+      .createQueryBuilder('booking')
+      .select(['booking.checkInDate', 'booking.checkOutDate'])
+      .where('booking.room.roomId = :roomId', { roomId })
+      .andWhere('booking.checkOutDate >= :currentDate', { currentDate })
+      .getMany();
+
+    if (!bookings || bookings.length === 0) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy khung giờ nào đã được đặt cho phòng này',
+      });
+    }
+
+    return bookings.map((booking) => ({
+      checkInDate: booking.checkInDate,
+      checkOutDate: booking.checkOutDate,
+    }));
+  }
+
+  async search(seachBookingDto: SearchBookingDto): Promise<Booking[]> {
+    const { customerName, roomName, channel } = seachBookingDto;
+
+    const query = this.bookingRepo
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.room', 'room');
+
+    if (customerName) {
+      query.andWhere(
+        '(unaccent(booking.customerName) ILIKE unaccent(:customerName))',
+        {
+          customerName: `%${customerName}%`,
+        },
+      );
+    }
+
+    if (roomName) {
+      query.andWhere('(unaccent(room.roomName) ILIKE unaccent(:roomName))', {
+        roomName: `%${roomName}%`,
+      });
+    }
+
+    if (channel) {
+      query.andWhere('(booking.channel::text ILIKE :channel)', {
+        channel: `%${channel}%`,
+      });
+    }
+
+    const bookings = await query.getMany();
+
+    if (!bookings || bookings.length === 0) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy đặt phòng nào',
+      });
+    }
+
+    return bookings;
   }
 
   // async remove(roomId: string): Promise<void> {
