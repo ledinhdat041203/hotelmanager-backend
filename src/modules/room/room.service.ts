@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { BadRequestException, NotFoundException } from '@/commons';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { searchRoomDto } from './dto/search-room.dto';
+import { RoomType } from '../room-type/room-type.entity';
 
 @Injectable()
 export class RoomService {
@@ -71,6 +72,16 @@ export class RoomService {
     } catch (error) {
       throw new BadRequestException({ message: error.message });
     }
+  }
+
+  async findRoomTypeByRoomId(roomId: string): Promise<RoomType> {
+    const room = await this.roomRepo.findOne({
+      where: { roomId },
+      relations: ['roomType'],
+      select: ['roomType'],
+    });
+
+    return room.roomType;
   }
 
   async update(roomId: string, updateRoomDto: UpdateRoomDto): Promise<Room> {

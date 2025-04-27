@@ -16,6 +16,7 @@ import { CreatedResponse, SuccessfullyRespose } from '@/commons';
 import { Room } from './room.entity';
 import { plainToInstance } from 'class-transformer';
 import { searchRoomDto } from './dto/search-room.dto';
+import { RoomType } from '../room-type/room-type.entity';
 
 @ApiTags('Room')
 @Controller('room')
@@ -41,11 +42,25 @@ export class RoomController {
     @Query('roomTypeId') roomTypeId: string,
     @Query('status') status: number,
   ): Promise<SuccessfullyRespose<Room[]>> {
+    console.log('--------', roomTypeId, status);
     const rooms = await this.roomService.findByRoomTypeId(roomTypeId, status);
 
     return new SuccessfullyRespose({
       message: 'Lấy danh sách phòng thành công',
       data: plainToInstance(Room, rooms),
+    });
+  }
+
+  @Get('find-room-type/:roomId')
+  @ApiOperation({ summary: 'find room type by room id' })
+  async findRoomTypeByRoomId(
+    @Param('roomId') roomId: string,
+  ): Promise<SuccessfullyRespose<RoomType>> {
+    const roomType = await this.roomService.findRoomTypeByRoomId(roomId);
+
+    return new SuccessfullyRespose({
+      message: 'Lấy danh sách phòng thành công',
+      data: plainToInstance(RoomType, roomType),
     });
   }
 

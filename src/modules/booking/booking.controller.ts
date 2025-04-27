@@ -6,6 +6,7 @@ import {
   Param,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CreatedResponse, SuccessfullyRespose } from '@/commons';
@@ -14,6 +15,7 @@ import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { Booking } from './booking.entity';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { SearchBookingDto } from './dto/seach-booking.dto';
 
 @ApiTags('Booking')
 @Controller('booking')
@@ -42,6 +44,34 @@ export class BookingController {
     return new SuccessfullyRespose({
       message: 'Lấy danh sách booking thành công',
       data: plainToInstance(Booking, booking),
+    });
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'search booking' })
+  async search(
+    @Query() searchBookingDto: SearchBookingDto,
+  ): Promise<SuccessfullyRespose<Booking[]>> {
+    console.log(searchBookingDto);
+    const bookings = await this.bookingService.search(searchBookingDto);
+
+    return new SuccessfullyRespose({
+      message: 'Lấy thông tin phòng thành công',
+      data: plainToInstance(Booking, bookings),
+    });
+  }
+
+  @Get('booked-time-slots/:roomId')
+  @ApiOperation({ summary: 'Get booked time slots for a room' })
+  async findBookedTimeSlots(
+    @Param('roomId') roomId: string,
+  ): Promise<SuccessfullyRespose<{ checkInDate: Date; checkOutDate: Date }[]>> {
+    const bookedTimeSlots =
+      await this.bookingService.findBookedTimeSlots(roomId);
+
+    return new SuccessfullyRespose({
+      message: 'Lấy danh sách khung giờ đã được đặt thành công',
+      data: bookedTimeSlots,
     });
   }
 

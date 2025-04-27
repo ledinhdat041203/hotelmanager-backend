@@ -51,7 +51,7 @@ export class CreateBookingDto {
   @IsNumber()
   @Min(1)
   quantity?: number;
-
+  
   @IsOptional()
   @IsNumber()
   @Min(0)
