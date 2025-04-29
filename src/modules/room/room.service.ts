@@ -108,6 +108,10 @@ export class RoomService {
       room.state = updateRoomDto.state;
     }
 
+    if (updateRoomDto.clean) {
+      room.clean = updateRoomDto.clean;
+    }
+    console.log(updateRoomDto.clean);
     const updatedRoom = await this.roomRepo.save(room);
     if (!updatedRoom) {
       throw new BadRequestException({ message: 'Cập nhật thất bại' });
