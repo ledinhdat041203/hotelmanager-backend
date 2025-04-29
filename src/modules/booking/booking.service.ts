@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@/commons';
+import {
+  BadRequestException,
+  BookingStatus,
+  NotFoundException,
+} from '@/commons';
 import { Booking } from './booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { Room } from '../room/room.entity';
@@ -10,7 +14,7 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UpdateRoomDto } from '../room/dto/update-room.dto';
 import { RoomState } from '@/commons/types/room-state-enum';
 import { SearchBookingDto } from './dto/seach-booking.dto';
-
+import { RoomClean } from '@/commons/types/room-clean-enum';
 
 @Injectable()
 export class BookingService {
@@ -39,12 +43,13 @@ export class BookingService {
     if (!savedBooking) {
       throw new BadRequestException({ message: 'Tạo booking thất bại' });
     }
+    if (room.state !== RoomState.IN_USE) {
+      const updateRoomDto = new UpdateRoomDto();
+      updateRoomDto.state =
+        status === 'Đã nhận phòng' ? RoomState.IN_USE : RoomState.PENDING;
 
-    const updateRoomDto = new UpdateRoomDto();
-    updateRoomDto.state =
-      status === 'Đã nhận phòng' ? RoomState.IN_USE : RoomState.PENDING;
-
-    await this.roomService.update(roomId, updateRoomDto);
+      await this.roomService.update(roomId, updateRoomDto);
+    }
 
     return savedBooking;
   }
@@ -114,8 +119,22 @@ export class BookingService {
     }));
   }
 
+  async findBookingByRoom(roomId: string): Promise<Booking[]> {
+    const now = new Date();
+    const bookings = await this.bookingRepo.find({
+      where: {
+        room: { roomId },
+        checkInDate: MoreThan(now),
+        status: BookingStatus.PENDING,
+      },
+    });
+
+    return bookings;
+  }
+
   async search(seachBookingDto: SearchBookingDto): Promise<Booking[]> {
-    const { customerName, roomName, channel } = seachBookingDto;
+    const { customerName, roomName, channel, status } = seachBookingDto;
+    const now = new Date();
 
     const query = this.bookingRepo
       .createQueryBuilder('booking')
@@ -142,6 +161,10 @@ export class BookingService {
       });
     }
 
+    if (status) {
+      query.andWhere('booking.status IN (:...status)', { status });
+    }
+
     const bookings = await query.getMany();
 
     if (!bookings || bookings.length === 0) {
@@ -153,19 +176,57 @@ export class BookingService {
     return bookings;
   }
 
-  // async remove(roomId: string): Promise<void> {
-  //   try {
-  //     const result = await this.roomRepo.delete(roomId);
+  async checkin(bookingId: string): Promise<Booking> {
+    const booking = await this.findOne(bookingId);
+    if (booking.status !== BookingStatus.PENDING) {
+      throw new BadRequestException({ message: 'Không thể nhận phòng lại' });
+    }
 
-  //     if (result.affected === 0) {
-  //       throw new NotFoundException({
-  //         message: 'Không tìm thấy phòng để xoá',
-  //       });
-  //     }
-  //   } catch (error) {
-  //     throw new NotFoundException({
-  //       message: 'Không tìm thấy phòng để xoá',
-  //     });
-  //   }
-  // }
+    const room = booking.room;
+    if (room.state === RoomState.IN_USE) {
+      throw new BadRequestException({ message: 'Phòng đang được sử dụng' });
+    }
+
+    booking.status = BookingStatus.CHECKED_IN;
+    const updatedBooking = await this.bookingRepo.save(booking);
+    if (updatedBooking) {
+      const updateDto = new UpdateRoomDto();
+      updateDto.state = RoomState.IN_USE;
+      await this.roomService.update(room.roomId, updateDto);
+
+      return updatedBooking;
+    } else {
+      throw new BadRequestException({ message: 'Nhận phòng thất bại' });
+    }
+  }
+
+  async payBooking(bookingId: string, customerPaid: number): Promise<Booking> {
+    const booking = await this.findOne(bookingId);
+    if (booking.status === BookingStatus.CHECKED_OUT) {
+      throw new BadRequestException({ message: 'Đơn đã thanh toán' });
+    }
+    if (customerPaid < booking.totalPrice - booking.depositAmount) {
+      throw new BadRequestException({ message: 'Số tiền không đủ' });
+    }
+
+    booking.status = BookingStatus.CHECKED_OUT;
+    const updatedBooking = await this.bookingRepo.save(booking);
+    if (updatedBooking) {
+      const room = booking.room;
+      const updateDto = new UpdateRoomDto();
+      const bookings = await this.findBookingByRoom(room.roomId);
+      if (bookings.length === 0) {
+        updateDto.state = RoomState.AVAILABLE;
+      } else {
+        updateDto.state = RoomState.PENDING;
+      }
+
+      updateDto.clean = RoomClean.DIRTY;
+      await this.roomService.update(room.roomId, updateDto);
+
+      return updatedBooking;
+    } else {
+      throw new BadRequestException({ message: 'Thanh toán thất bại' });
+    }
+  }
 }

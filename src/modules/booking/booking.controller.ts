@@ -84,7 +84,7 @@ export class BookingController {
 
     return new SuccessfullyRespose({
       message: 'Lấy thông tin booking thành công',
-      data: plainToInstance(Booking, booking),
+      data: booking,
     });
   }
 
@@ -102,6 +102,37 @@ export class BookingController {
     return new SuccessfullyRespose({
       message: 'Cập nhật booking thành công',
       data: plainToInstance(Booking, updatedBooking),
+    });
+  }
+
+  @Post(':id/checkin')
+  @ApiOperation({ summary: 'Checkin Booking' })
+  async checkinBooking(
+    @Param('id') bookingId: string,
+  ): Promise<SuccessfullyRespose<Booking>> {
+    const booking = await this.bookingService.checkin(bookingId);
+
+    return new SuccessfullyRespose({
+      message: 'Nhận phòng thành công',
+      data: booking,
+    });
+  }
+
+  @Post(':id/pay')
+  @ApiOperation({ summary: 'Booking payment' })
+  async payBooking(
+    @Param('id') bookingId: string,
+    @Body('customerPaid') customerPaid: number,
+  ): Promise<SuccessfullyRespose<Booking>> {
+    console.log('create', customerPaid);
+    const booking = await this.bookingService.payBooking(
+      bookingId,
+      customerPaid,
+    );
+
+    return new SuccessfullyRespose({
+      message: 'Thanh toán thành công',
+      data: booking,
     });
   }
 

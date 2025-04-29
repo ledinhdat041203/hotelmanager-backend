@@ -21,4 +21,7 @@ export class SearchBookingDto {
   @IsEnum(Channel)
   @IsOptional()
   channel?: Channel;
+
+  @IsOptional()
+  status: BookingStatus[];
 }

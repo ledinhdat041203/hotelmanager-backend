@@ -1,9 +1,10 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Room } from '../room/room.entity';
-import { BookingStatus, BookingType, Channel } from '@/commons';
+import { BaseEntity, BookingStatus, BookingType, Channel } from '@/commons';
+import { extend } from 'lodash';
 
 @Entity('bookings')
-export class Booking {
+export class Booking extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
