@@ -15,6 +15,10 @@ import { UpdateRoomDto } from '../room/dto/update-room.dto';
 import { RoomState } from '@/commons/types/room-state-enum';
 import { SearchBookingDto } from './dto/seach-booking.dto';
 import { RoomClean } from '@/commons/types/room-clean-enum';
+import * as dayjs from 'dayjs';
+import 'dayjs/locale/vi'; // import tiếng Việt
+
+dayjs.locale('vi'); // đặt locale mặc định
 
 @Injectable()
 export class BookingService {
@@ -95,6 +99,21 @@ export class BookingService {
     return updatedBooking;
   }
 
+  async updateTotalServicePrice(
+    id: string,
+    addPrice: number,
+  ): Promise<Booking> {
+    const booking = await this.findOne(id);
+
+    booking.totalServicePrice += addPrice;
+
+    const updatedBooking = await this.bookingRepo.save(booking);
+    if (!updatedBooking) {
+      throw new BadRequestException({ message: 'Cập nhật booking thất bại' });
+    }
+    return updatedBooking;
+  }
+
   async findBookedTimeSlots(
     roomId: string,
   ): Promise<{ checkInDate: Date; checkOutDate: Date }[]> {
@@ -102,9 +121,15 @@ export class BookingService {
 
     const bookings = await this.bookingRepo
       .createQueryBuilder('booking')
-      .select(['booking.checkInDate', 'booking.checkOutDate'])
+      // .select(['booking.checkInDate', 'booking.checkOutDate'])
       .where('booking.room.roomId = :roomId', { roomId })
       .andWhere('booking.checkOutDate >= :currentDate', { currentDate })
+      .andWhere('booking.status::text != :canceledStatus', {
+        canceledStatus: 'Đã hủy',
+      })
+      .andWhere('booking.status::text != :checkedOutStatus', {
+        checkedOutStatus: 'Đã trả phòng',
+      })
       .getMany();
 
     if (!bookings || bookings.length === 0) {
@@ -112,6 +137,8 @@ export class BookingService {
         message: 'Không tìm thấy khung giờ nào đã được đặt cho phòng này',
       });
     }
+
+    // console.log('=======', bookings);
 
     return bookings.map((booking) => ({
       checkInDate: booking.checkInDate,
@@ -205,7 +232,10 @@ export class BookingService {
     if (booking.status === BookingStatus.CHECKED_OUT) {
       throw new BadRequestException({ message: 'Đơn đã thanh toán' });
     }
-    if (customerPaid < booking.totalPrice - booking.depositAmount) {
+    if (
+      customerPaid <
+      booking.totalPrice + booking.totalServicePrice - booking.depositAmount
+    ) {
       throw new BadRequestException({ message: 'Số tiền không đủ' });
     }
 
@@ -228,5 +258,249 @@ export class BookingService {
     } else {
       throw new BadRequestException({ message: 'Thanh toán thất bại' });
     }
+  }
+  async cancelBooking(bookingId: string): Promise<Booking> {
+    const booking = await this.findOne(bookingId);
+
+    if (booking.status !== BookingStatus.PENDING) {
+      throw new BadRequestException({ message: 'Không thể hủy đơn này' });
+    }
+
+    booking.status = BookingStatus.CANCELED;
+    const cancelledBooking = await this.bookingRepo.save(booking);
+
+    if (cancelledBooking) {
+      const room = booking.room;
+      const updateDto = new UpdateRoomDto();
+      const bookings = await this.findBookingByRoom(room.roomId);
+      if (bookings.length === 0) {
+        updateDto.state = RoomState.AVAILABLE;
+      } else {
+        updateDto.state = RoomState.PENDING;
+      }
+      await this.roomService.update(room.roomId, updateDto);
+      return cancelledBooking;
+    } else {
+      throw new BadRequestException({ message: 'Thanh toán thất bại' });
+    }
+  }
+
+  async getBookingsCount(from: Date, to: Date) {
+    const rawRevenue = await this.bookingRepo.query(
+      `
+      SELECT 
+        SUM("totalPrice" + "totalServicePrice") as revenue
+      FROM bookings
+      WHERE status = 'Đã trả phòng' 
+        AND DATE("checkOutDate") BETWEEN $1 AND $2
+    `,
+      [from, to],
+    );
+
+    const rawCountBooking = await this.bookingRepo.query(
+      `
+      SELECT COUNT(id) as countBooking
+      FROM bookings
+
+      WHERE DATE("createdAt") BETWEEN $1 AND $2
+    `,
+      [from, to],
+    );
+
+    const rawCountCancel = await this.bookingRepo.query(
+      `
+      SELECT COUNT(id) as countBooking
+      FROM bookings
+      WHERE DATE("updatedAt") BETWEEN $1 AND $2 
+        AND status = 'Đã hủy'
+    `,
+      [from, to],
+    );
+
+    const revenue = +rawRevenue[0].revenue;
+    const countBooking = +rawCountBooking[0].countbooking;
+    const countCancel = +rawCountCancel[0].countbooking;
+
+    return { revenue, countBooking, countCancel };
+  }
+
+  async getRevenueLast30Days() {
+    // Lấy dữ liệu doanh thu theo ngày từ DB
+    const raw = await this.bookingRepo.query(`
+      SELECT 
+        DATE("checkOutDate") as day, 
+        SUM("totalPrice" + "totalServicePrice") as revenue
+      FROM bookings
+      WHERE status = 'Đã trả phòng' 
+        AND "checkOutDate" >= NOW() - INTERVAL '30 days'
+      GROUP BY day
+    `);
+
+    // Map doanh thu theo ngày dạng 'YYYY-MM-DD'
+    const revenueMap = new Map(
+      raw.map((item) => [dayjs(item.day).format('YYYY-MM-DD'), +item.revenue]),
+    );
+
+    // Tạo danh sách 30 ngày gần nhất
+    const last30Days = Array.from({ length: 30 }).map((_, i) => {
+      const date = dayjs().subtract(29 - i, 'day'); // từ 29 ngày trước tới hôm nay
+      const key = date.format('YYYY-MM-DD');
+      return {
+        label: date.format('DD/MM'),
+        revenue: revenueMap.get(key) || 0,
+      };
+    });
+
+    return last30Days;
+  }
+
+  async getRevenueThisWeek() {
+    const raw = await this.bookingRepo.query(`
+      SELECT 
+        TO_CHAR("checkOutDate", 'YYYY-MM-DD') as day,
+        SUM("totalPrice" + "totalServicePrice") as revenue
+      FROM bookings
+      WHERE status = 'Đã trả phòng'
+        AND "checkOutDate" >= DATE_TRUNC('week', NOW())
+        AND "checkOutDate" < DATE_TRUNC('week', NOW()) + INTERVAL '7 days'
+      GROUP BY day
+      ORDER BY day
+    `);
+
+    const startOfWeek = dayjs().startOf('week');
+
+    const daysOfWeek = Array.from({ length: 7 }).map((_, index) => {
+      const date = startOfWeek.add(index, 'day');
+      return {
+        day: date.format('YYYY-MM-DD'),
+        label: date.format('dddd'),
+        revenue: 0,
+      };
+    });
+
+    // Gán dữ liệu từ raw vào danh sách mặc định
+    raw.forEach((item) => {
+      const found = daysOfWeek.find((d) => d.day === item.day);
+      if (found) {
+        found.revenue = +item.revenue;
+      }
+    });
+
+    return daysOfWeek.map(({ label, revenue }) => ({ label, revenue }));
+  }
+
+  async getRevenueThisMonth() {
+    const raw = await this.bookingRepo.query(`
+      SELECT 
+        TO_CHAR("checkOutDate", 'YYYY-MM-DD') as day,
+        SUM("totalPrice" + "totalServicePrice") as revenue
+      FROM bookings
+      WHERE status = 'Đã trả phòng' 
+        AND "checkOutDate" >= DATE_TRUNC('month', NOW())
+      GROUP BY day
+      ORDER BY day
+    `);
+
+    const revenueMap = new Map<string, number>();
+    raw.forEach((item) => {
+      revenueMap.set(item.day, +item.revenue);
+    });
+
+    const today = dayjs();
+    const daysInMonth = today.daysInMonth();
+    const startOfMonth = today.startOf('month');
+
+    const result = Array.from({ length: daysInMonth }, (_, i) => {
+      const date = startOfMonth.add(i, 'day');
+      const dayStr = date.format('YYYY-MM-DD');
+      return {
+        label: date.format('DD/MM'),
+        revenue: revenueMap.get(dayStr) || 0,
+      };
+    });
+
+    return result;
+  }
+
+  async getRevenueLastMonth() {
+    const raw = await this.bookingRepo.query(`
+      SELECT 
+        TO_CHAR("checkOutDate", 'YYYY-MM-DD') as day,
+        SUM("totalPrice" + "totalServicePrice") as revenue
+      FROM bookings
+      WHERE status = 'Đã trả phòng' 
+        AND "checkOutDate" >= DATE_TRUNC('month', NOW() - INTERVAL '1 month')
+        AND "checkOutDate" < DATE_TRUNC('month', NOW())
+      GROUP BY day
+      ORDER BY day
+    `);
+
+    const revenueMap = new Map<string, number>();
+    raw.forEach((item) => {
+      revenueMap.set(item.day, +item.revenue);
+    });
+
+    const lastMonth = dayjs().subtract(1, 'month');
+    const daysInLastMonth = lastMonth.daysInMonth();
+    const startOfLastMonth = lastMonth.startOf('month');
+
+    const result = Array.from({ length: daysInLastMonth }, (_, i) => {
+      const date = startOfLastMonth.add(i, 'day');
+      const dayStr = date.format('YYYY-MM-DD');
+      return {
+        label: date.format('DD/MM'),
+        revenue: revenueMap.get(dayStr) || 0,
+      };
+    });
+
+    return result;
+  }
+
+  async getRevenueThisYear() {
+    const raw = await this.bookingRepo.query(`
+      SELECT 
+        EXTRACT(MONTH FROM "checkOutDate") as month, 
+        SUM("totalPrice" + "totalServicePrice") as revenue
+      FROM bookings
+      WHERE status = 'Đã trả phòng' 
+        AND "checkOutDate" >= DATE_TRUNC('year', NOW())
+      GROUP BY month
+      ORDER BY month
+    `);
+
+    const revenueMap = new Map<number, number>();
+    raw.forEach((item) => {
+      revenueMap.set(+item.month, +item.revenue);
+    });
+
+    const result = Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1;
+      return {
+        label: `Tháng ${month}`,
+        revenue: revenueMap.get(month) || 0,
+      };
+    });
+
+    return result;
+  }
+
+  async getBookingsCountByChannel(from: Date, to: Date) {
+    const rawCountBooking = await this.bookingRepo.query(
+      `
+      SELECT COUNT(id) as count, channel
+      FROM bookings
+      WHERE DATE("createdAt") BETWEEN $1 AND $2
+        AND status = 'Đã trả phòng'
+      GROUP BY channel
+      `,
+      [from, to],
+    );
+
+    const result: Record<string, number> = {};
+    rawCountBooking.forEach((row) => {
+      result[row.channel] = +row.count;
+    });
+
+    return result;
   }
 }

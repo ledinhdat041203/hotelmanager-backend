@@ -6,6 +6,7 @@ import {
   Param,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
@@ -14,6 +15,7 @@ import { ServiceService } from './service.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { Service } from './service.entity';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { SearchServiceDto } from './dto/search-service.dto';
 
 @ApiTags('Service')
 @Controller('service')
@@ -38,6 +40,20 @@ export class ServiceController {
   async findAll(): Promise<SuccessfullyRespose<Service[]>> {
     const services = await this.serviceService.findAll();
     return new SuccessfullyRespose({
+      data: plainToInstance(Service, services),
+    });
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'search services' })
+  async search(
+    @Query() searchDto: SearchServiceDto,
+  ): Promise<SuccessfullyRespose<Service[]>> {
+    console.log('lllllllllllllllll', searchDto);
+    const services = await this.serviceService.search(searchDto);
+
+    return new SuccessfullyRespose({
+      message: 'Lấy thông tin thành công',
       data: plainToInstance(Service, services),
     });
   }

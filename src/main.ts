@@ -7,7 +7,7 @@ import { AllExceptionsFilter } from './commons';
 import { SwaggerModule } from '@nestjs/swagger';
 import { swaggerConfig } from './configs';
 import AppDataSource from './configs/db.config';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -22,6 +22,14 @@ async function bootstrap() {
     methods: ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'],
     credentials: true,
   });
+
+  // app.useGlobalPipes(
+  //   new ValidationPipe({
+  //     whitelist: true, // chỉ giữ các field có trong DTO
+  //     // forbidNonWhitelisted: true, // ném lỗi nếu có field lạ
+  //     // transform: true, // tự động convert type
+  //   }),
+  // );
 
   await AppDataSource.initialize()
     .then(() => {

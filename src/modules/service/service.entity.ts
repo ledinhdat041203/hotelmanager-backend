@@ -24,16 +24,16 @@ export class Service {
   @Column()
   unit: string;
 
-  @Column('decimal', { precision: 12, scale: 2 })
+  @Column({ type: 'int', nullable: true })
   sellPrice: number;
 
-  @Column('decimal', { precision: 12, scale: 2 })
+  @Column({ type: 'int', nullable: true })
   costPrice: number;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: 'int', nullable: true, default: 0 })
   quantityInStock: number;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: 'int', nullable: true, default: 0 })
   minimumStock: number;
 
   @Column({

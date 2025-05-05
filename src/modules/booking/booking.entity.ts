@@ -1,7 +1,14 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Room } from '../room/room.entity';
 import { BaseEntity, BookingStatus, BookingType, Channel } from '@/commons';
 import { extend } from 'lodash';
+import { BookingItem } from '../booking-service/booking-service.entity';
 
 @Entity('bookings')
 export class Booking extends BaseEntity {
@@ -42,6 +49,7 @@ export class Booking extends BaseEntity {
 
   @Column() unitPrice: number;
   @Column() totalPrice: number;
+  @Column({ default: 0 }) totalServicePrice: number;
   @Column({ nullable: true }) depositAmount: number;
 
   @Column({
@@ -55,4 +63,8 @@ export class Booking extends BaseEntity {
   //     cascade: true,
   //   })
   //   serviceItems: BookingServiceItem[];
+  @OneToMany(() => BookingItem, (item) => item.booking, {
+    cascade: true,
+  })
+  services: BookingItem[];
 }

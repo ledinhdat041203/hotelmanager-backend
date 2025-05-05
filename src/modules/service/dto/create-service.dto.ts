@@ -1,4 +1,5 @@
 import { ServiceType, Status } from '@/commons';
+import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsNotEmpty,
@@ -21,20 +22,24 @@ export class CreateServiceDto {
   unit: string;
 
   @IsNumber()
+  @Type(() => Number)
   @Min(0)
   sellPrice: number;
 
   @IsNumber()
+  @Type(() => Number)
   @Min(0)
   costPrice: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   @Min(0)
   quantityInStock?: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   @Min(0)
   minimumStock?: number;
 
