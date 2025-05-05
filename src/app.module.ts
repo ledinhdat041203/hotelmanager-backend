@@ -13,6 +13,7 @@ import { CustomerModule } from './modules/customer/customer.module';
 import { ServiceModule } from './modules/service/service.module';
 import { Booking } from './modules/booking/booking.entity';
 import { BookingModule } from './modules/booking/booking.module';
+import { BookingItemModule } from './modules/booking-service/booking-service.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { BookingModule } from './modules/booking/booking.module';
     CustomerModule,
     ServiceModule,
     BookingModule,
+    BookingItemModule,
     ConfigModule.forRoot({
       load: [dbConfig],
     }),

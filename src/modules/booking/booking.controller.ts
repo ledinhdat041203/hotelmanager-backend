@@ -17,6 +17,11 @@ import { Booking } from './booking.entity';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { SearchBookingDto } from './dto/seach-booking.dto';
 
+import * as dayjs from 'dayjs';
+import 'dayjs/locale/vi'; // import tiếng Việt
+
+dayjs.locale('vi'); // đặt locale mặc định
+
 @ApiTags('Booking')
 @Controller('booking')
 export class BookingController {
@@ -68,10 +73,76 @@ export class BookingController {
   ): Promise<SuccessfullyRespose<{ checkInDate: Date; checkOutDate: Date }[]>> {
     const bookedTimeSlots =
       await this.bookingService.findBookedTimeSlots(roomId);
-
+    console.log('========', bookedTimeSlots);
     return new SuccessfullyRespose({
       message: 'Lấy danh sách khung giờ đã được đặt thành công',
       data: bookedTimeSlots,
+    });
+  }
+
+  @Get('get-revenue')
+  @ApiOperation({ summary: 'Get revenue' })
+  async getOverview(): Promise<SuccessfullyRespose<any>> {
+    const revenueLast30Days = await this.bookingService.getRevenueLast30Days();
+    const revenueThisWeek = await this.bookingService.getRevenueThisWeek();
+    const revenueThisYear = await this.bookingService.getRevenueThisYear();
+    const revenueThisMonth = await this.bookingService.getRevenueThisMonth();
+    const revenueLastMonth = await this.bookingService.getRevenueLastMonth();
+    return new SuccessfullyRespose({
+      message: 'Lấy thông tin thành công',
+      data: {
+        revenueLast30Days,
+        revenueThisWeek,
+        revenueThisYear,
+        revenueThisMonth,
+        revenueLastMonth,
+      },
+    });
+  }
+
+  @Get('get-count-booking')
+  @ApiOperation({ summary: 'Get count booking' })
+  async getCountBooking(): Promise<SuccessfullyRespose<any>> {
+    const todayStart = dayjs().startOf('day').toDate();
+    const weekStart = dayjs().startOf('week').toDate();
+    const monthStart = dayjs().startOf('month').toDate();
+
+    const [todayStats, weekStats, monthStats] = await Promise.all([
+      this.bookingService.getBookingsCount(todayStart, new Date()),
+      this.bookingService.getBookingsCount(weekStart, new Date()),
+      this.bookingService.getBookingsCount(monthStart, new Date()),
+    ]);
+
+    return new SuccessfullyRespose({
+      message: 'Lấy thông tin thành công',
+      data: {
+        today: todayStats,
+        week: weekStats,
+        month: monthStats,
+      },
+    });
+  }
+
+  @Get('get-count-by-channel')
+  @ApiOperation({ summary: 'Get count booking by channel' })
+  async getCountBookingByChannel(): Promise<SuccessfullyRespose<any>> {
+    const todayStart = dayjs().startOf('day').toDate();
+    const weekStart = dayjs().startOf('week').toDate();
+    const monthStart = dayjs().startOf('month').toDate();
+
+    const [todayStats, weekStats, monthStats] = await Promise.all([
+      this.bookingService.getBookingsCountByChannel(todayStart, new Date()),
+      this.bookingService.getBookingsCountByChannel(weekStart, new Date()),
+      this.bookingService.getBookingsCountByChannel(monthStart, new Date()),
+    ]);
+
+    return new SuccessfullyRespose({
+      message: 'Lấy thông tin thành công',
+      data: {
+        today: todayStats,
+        week: weekStats,
+        month: monthStats,
+      },
     });
   }
 
@@ -133,6 +204,17 @@ export class BookingController {
     return new SuccessfullyRespose({
       message: 'Thanh toán thành công',
       data: booking,
+    });
+  }
+
+  @Delete(':id/cancel')
+  async cancelBooking(
+    @Param('id') id: string,
+  ): Promise<SuccessfullyRespose<Booking>> {
+    const cancelled = await this.bookingService.cancelBooking(id);
+    return new SuccessfullyRespose({
+      message: 'Hủy đơn thành công',
+      data: cancelled,
     });
   }
 

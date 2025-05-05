@@ -34,6 +34,7 @@
     "class-validator": "^0.14.1",
     "compression": "^1.8.0",
     "cookie-parser": "^1.4.7",
+    "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
     "helmet": "^8.1.0",
     "lodash": "^4.17.21",

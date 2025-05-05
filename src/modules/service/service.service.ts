@@ -6,6 +6,7 @@ import { Service } from './service.entity';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateCustomerDto } from '../customer/dto/update-customer.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { SearchServiceDto } from './dto/search-service.dto';
 
 @Injectable()
 export class ServiceService {
@@ -15,6 +16,8 @@ export class ServiceService {
   ) {}
 
   async create(createServiceDto: CreateServiceDto): Promise<Service> {
+    console.log(createServiceDto);
+
     const service = this.serviceRepo.create(createServiceDto);
     const serviceSaved = await this.serviceRepo.save(service);
 
@@ -58,5 +61,42 @@ export class ServiceService {
         message: 'Không tìm thấy dịch vụ để xoá',
       });
     }
+  }
+
+  async search(searchDto: SearchServiceDto): Promise<Service[]> {
+    const { name, type, inventory, status } = searchDto;
+
+    const query = this.serviceRepo.createQueryBuilder('service');
+
+    if (name) {
+      query.andWhere('(unaccent(service.name) ILIKE unaccent(:name))', {
+        name: `%${name}%`,
+      });
+    }
+
+    if (type) {
+      query.andWhere('(service.type::text ILIKE :type)', { type });
+    }
+
+    if (status !== undefined && status !== null) {
+      query.andWhere('service.status = :status', { status: Number(status) });
+    }
+
+    if (inventory === 'Còn hàng trong kho') {
+      query.andWhere('service.quantityInStock >0');
+    } else if (inventory === 'Hết hàng trong kho') {
+      query.andWhere('service.quantityInStock <= 0');
+    } else if (inventory === 'Dưới định mức') {
+      query.andWhere('service.quantityInStock < service.minimumStock');
+    }
+    const services = await query.getMany();
+
+    if (!services || services.length === 0) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy dịch vụ nào',
+      });
+    }
+
+    return services;
   }
 }
