@@ -1,4 +1,4 @@
-import { BaseEntity } from 'src/commons';
+import { BaseEntity, Status } from 'src/commons';
 import {
   Column,
   Entity,
@@ -9,6 +9,9 @@ import {
 import * as argon2 from 'argon2';
 import { Exclude } from 'class-transformer';
 import { RefreshToken } from '../token/refresh-token.entity';
+import { GenderEnum } from '@/commons/types/gender-enum';
+import { IsEnum } from 'class-validator';
+import { Role } from '@/commons/types/role-enum';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -16,46 +19,56 @@ export class User extends BaseEntity {
   userId: string;
 
   @Column({ unique: true })
-  userName: string;
-
-  // @Column({ nullable: true })
-  // email: string;
+  email: string;
 
   @Column()
   @Exclude()
   password: string;
 
-  // @Column({ nullable: true })
-  // phone: string;
+  @Column({ nullable: true })
+  phone: string;
 
   @Column()
   fullName: string;
 
-  // @Column({ nullable: true })
-  // @IsEnum(GenderEnum)
-  // gender: string;
+  @Column({ nullable: true })
+  @IsEnum(GenderEnum)
+  gender: GenderEnum;
 
-  // @Column({ nullable: true, type: 'date' })
-  // dateOfBirth: Date;
+  @Column({ nullable: true, type: 'date' })
+  dateOfBirth: Date;
 
-  // @Column({
-  //   nullable: true,
-  //   default:
-  //     'https://res.cloudinary.com/dfx1kzavc/image/upload/v1729527211/avatars/yx6h61wlbwxfscuqzjpk.jpg',
-  // })
-  // avatar: string;
+  @Column({ nullable: true, type: 'date', default: () => 'CURRENT_DATE' })
+  startDate: Date;
 
-  @Column({ default: 1 })
-  status: number;
+  @Column({
+    nullable: true,
+    default:
+      'https://res.cloudinary.com/dfx1kzavc/image/upload/v1729527211/avatars/yx6h61wlbwxfscuqzjpk.jpg',
+  })
+  avatar: string;
+  
+  @Column({
+    type: 'enum',
+    enum: Status,
+    default: Status.ACTIVE,
+  })
+  status: Status;
+
+  @Column({ type: 'enum', enum: Role, default: Role.RECEPTIONIST })
+  role: Role;
 
   @Column({ nullable: true })
-  role: number;
+  notes: string;
 
-  @OneToMany(
-    () => RefreshToken,
-    (refreshToken: RefreshToken) => refreshToken.user,
-  )
-  refreshTokens: RefreshToken[];
+  @Column({ nullable: true })
+  address: string;
+
+  // @OneToMany(
+  //   () => RefreshToken,
+  //   (refreshToken: RefreshToken) => refreshToken.user,
+  // )
+  // refreshTokens: RefreshToken[];
 
   @BeforeInsert()
   async hashPassword() {

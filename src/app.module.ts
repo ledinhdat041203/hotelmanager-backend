@@ -14,6 +14,7 @@ import { ServiceModule } from './modules/service/service.module';
 import { Booking } from './modules/booking/booking.entity';
 import { BookingModule } from './modules/booking/booking.module';
 import { BookingItemModule } from './modules/booking-service/booking-service.module';
+import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { BookingItemModule } from './modules/booking-service/booking-service.mod
     ServiceModule,
     BookingModule,
     BookingItemModule,
+    CloudinaryModule,
     ConfigModule.forRoot({
       load: [dbConfig],
     }),
