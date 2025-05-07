@@ -17,12 +17,10 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(
-    req: Request,
-    username: string,
-    password: string,
-  ): Promise<any> {
-    const user = await this.authService.validateUser(username, password);
+  async validate(req: Request, email: string, password: string): Promise<any> {
+    console.log(email, password);
+
+    const user = await this.authService.validateUser(email, password);
     if (!user) {
       throw new UnAuthorizedException({
         message: 'Tài khoản hoặc mật khẩu không đúng',
