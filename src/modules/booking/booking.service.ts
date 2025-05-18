@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { MoreThan, Repository } from 'typeorm';
+import {
+  LessThanOrEqual,
+  MoreThan,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   BadRequestException,
@@ -502,5 +507,23 @@ export class BookingService {
     });
 
     return result;
+  }
+
+  async findBookingByDate(from: Date, to: Date): Promise<Booking[]> {
+    const bookings = await this.bookingRepo.find({
+      where: {
+        checkInDate: MoreThanOrEqual(from),
+        checkOutDate: LessThanOrEqual(to),
+        status: BookingStatus.CHECKED_OUT,
+      },
+    });
+
+    if (!bookings || bookings.length === 0) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy đặt phòng nào',
+      });
+    }
+
+    return bookings;
   }
 }
