@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MoreThan, Repository } from 'typeorm';
+import { Between, MoreThan, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   BadRequestException,
@@ -159,5 +159,26 @@ export class BookingItemService {
       totalSold: +item.totalsold,
     }));
   }
+
+  async findBookingServiceByDate(from: Date, to: Date): Promise<any> {
+    const bookings = await this.bookingItemRepo
+      .createQueryBuilder('booking_service')
+      .leftJoinAndSelect('booking_service.service', 'service')
+      .where('booking_service.createdAt BETWEEN :from AND :to', { from, to })
+      .groupBy('service.id')
+      .select([
+        'service.name',
+        'Sum(booking_service.quantity) AS totalBookings',
+        'Sum(booking_service.totalPrice) AS totalPrice',
+      ])
+      .getRawMany();
+
+    if (!bookings || bookings.length === 0) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy đặt phòng nào',
+      });
+    }
+
+    return bookings;
+  }
 }
-  

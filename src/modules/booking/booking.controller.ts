@@ -19,6 +19,7 @@ import { SearchBookingDto } from './dto/seach-booking.dto';
 
 import * as dayjs from 'dayjs';
 import 'dayjs/locale/vi'; // import tiếng Việt
+import { from } from 'form-data';
 
 dayjs.locale('vi'); // đặt locale mặc định
 
@@ -143,6 +144,27 @@ export class BookingController {
         week: weekStats,
         month: monthStats,
       },
+    });
+  }
+
+  @Get('get-booking-by-date')
+  @ApiOperation({ summary: 'Get booking by date' })
+  async findBookingByDate(
+    @Query('from') from: string,
+    @Query('too') too: string,
+  ): Promise<SuccessfullyRespose<Booking[]>> {
+    console.log('from', from);
+    console.log('too', too);
+    const fromDate = dayjs(from).startOf('day').toDate();
+    const toDate = dayjs(too).endOf('day').toDate();
+    const bookings = await this.bookingService.findBookingByDate(
+      fromDate,
+      toDate,
+    );
+
+    return new SuccessfullyRespose({
+      message: 'Lấy thông tin thành công',
+      data: plainToInstance(Booking, bookings),
     });
   }
 

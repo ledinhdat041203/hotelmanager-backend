@@ -6,6 +6,7 @@ import {
   Param,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CreatedResponse, SuccessfullyRespose } from '@/commons';
@@ -121,6 +122,27 @@ export class BookingItemController {
         week: weekStats,
         month: monthStats,
       },
+    });
+  }
+
+  @Get('get-booking-service-by-date')
+  @ApiOperation({ summary: 'Get booking service by date' })
+  async findBookingByDate(
+    @Query('from') from: string,
+    @Query('too') too: string,
+  ): Promise<SuccessfullyRespose<any>> {
+    console.log('from', from);
+    console.log('too', too);
+    const fromDate = dayjs(from).startOf('day').toDate();
+    const toDate = dayjs(too).endOf('day').toDate();
+    const bookings = await this.bookingItemtService.findBookingServiceByDate(
+      fromDate,
+      toDate,
+    );
+
+    return new SuccessfullyRespose({
+      message: 'Lấy thông tin thành công',
+      data: plainToInstance(BookingItem, bookings),
     });
   }
 
