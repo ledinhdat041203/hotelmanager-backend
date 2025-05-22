@@ -16,6 +16,7 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { Service } from './service.entity';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { SearchServiceDto } from './dto/search-service.dto';
+import { ImportServiceDto } from './dto/import-service.dto';
 
 @ApiTags('Service')
 @Controller('service')
@@ -69,6 +70,18 @@ export class ServiceController {
     });
   }
 
+  @Put('import')
+  @ApiOperation({ summary: 'import product' })
+  async importProduct(
+    @Body() dto: ImportServiceDto[],
+  ): Promise<SuccessfullyRespose<Service[]>> {
+    const updatedServices = await this.serviceService.updateQuantity(dto);
+    return new SuccessfullyRespose({
+      message: 'Nhập hàng thành công',
+      data: plainToInstance(Service, updatedServices),
+    });
+  }
+
   @Put(':id')
   @ApiOperation({ summary: 'Update service' })
   async update(
@@ -77,7 +90,7 @@ export class ServiceController {
   ): Promise<SuccessfullyRespose<Service>> {
     const updatedService = await this.serviceService.update(id, dto);
     return new SuccessfullyRespose({
-      message: 'cập nhật loại phòng thành công',
+      message: 'cập nhật thành công',
       data: plainToInstance(Service, updatedService),
     });
   }

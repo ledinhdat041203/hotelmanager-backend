@@ -7,6 +7,7 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateCustomerDto } from '../customer/dto/update-customer.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { SearchServiceDto } from './dto/search-service.dto';
+import { ImportServiceDto } from './dto/import-service.dto';
 
 @Injectable()
 export class ServiceService {
@@ -47,6 +48,24 @@ export class ServiceService {
     return await this.findOne(id);
   }
 
+  async updateQuantity(
+    importServiceDto: ImportServiceDto[],
+  ): Promise<Service[]> {
+    const updatedServices = await Promise.all(
+      importServiceDto.map(async (item) => {
+        const service = await this.findOne(item.serviceId);
+        service.quantityInStock += item.quantity;
+        if (service.quantityInStock < 0) {
+          throw new BadRequestException({
+            message: 'Hết hàng trong kho',
+          });
+        }
+        return await this.serviceRepo.save(service);
+      }),
+    );
+
+    return updatedServices;
+  }
   async remove(id: string): Promise<void> {
     try {
       const result = await this.serviceRepo.delete(id);

@@ -153,7 +153,8 @@ export class RoomService {
         'roomType.priceByDay',
         'roomType.priceByHour',
         'roomType.priceOvernight',
-      ]);
+      ])
+      .orderBy('room.roomName', 'ASC');
 
     if (searchData) {
       query.andWhere(

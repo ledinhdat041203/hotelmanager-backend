@@ -29,6 +29,12 @@ export class BookingItemService {
 
     const totalPrice = service.sellPrice * quantity;
 
+    await this.serviceService.updateQuantity([
+      {
+        serviceId: service.id,
+        quantity: -quantity,
+      },
+    ]);
     const bookingItem = this.bookingItemRepo.create({
       booking,
       service,
@@ -48,7 +54,7 @@ export class BookingItemService {
     return savedBooking;
   }
 
-  async findByBookinhg(bookingId: string): Promise<BookingItem[]> {
+  async findByBooking(bookingId: string): Promise<BookingItem[]> {
     const bookings = await this.bookingItemRepo.find({
       where: { booking: { id: bookingId } },
       relations: ['service'],
@@ -73,14 +79,22 @@ export class BookingItemService {
     updateDto: UpdateBookingServiceDto,
   ): Promise<{ bookingItem: BookingItem; changeTotal: number }> {
     const booking = await this.findOne(id);
+    const oldQuantity = booking.quantity;
 
     const { quantity } = updateDto;
+    const changeQuantity = oldQuantity - quantity;
 
     if (quantity !== undefined) booking.quantity = quantity;
     const oldPrice = booking.totalPrice;
     const newPrice = quantity * booking.unitPrice;
     booking.totalPrice = newPrice;
 
+    const updatedService = await this.serviceService.updateQuantity([
+      {
+        serviceId: booking.service.id,
+        quantity: changeQuantity,
+      },
+    ]);
     const updatedBooking = await this.bookingItemRepo.save(booking);
     if (!updatedBooking) {
       throw new BadRequestException({ message: 'Cập nhật booking thất bại' });
@@ -103,6 +117,13 @@ export class BookingItemService {
         message: 'Không tìm thấy booking item để xóa',
       });
     }
+
+    await this.serviceService.updateQuantity([
+      {
+        serviceId: bookingItem.service.id,
+        quantity: bookingItem.quantity,
+      },
+    ]);
 
     await this.bookingItemRepo.remove(bookingItem);
     await this.bookingService.updateTotalServicePrice(
