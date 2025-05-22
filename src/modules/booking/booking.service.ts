@@ -170,11 +170,12 @@ export class BookingService {
 
     const query = this.bookingRepo
       .createQueryBuilder('booking')
-      .leftJoinAndSelect('booking.room', 'room');
+      .leftJoinAndSelect('booking.room', 'room')
 
     if (customerName) {
       query.andWhere(
-        '(unaccent(booking.customerName) ILIKE unaccent(:customerName))',
+        '(unaccent(booking.customerName) ILIKE unaccent(:customerName)) \
+        OR (booking.cccd ILIKE :customerName) ',
         {
           customerName: `%${customerName}%`,
         },

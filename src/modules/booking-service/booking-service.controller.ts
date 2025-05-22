@@ -23,7 +23,7 @@ dayjs.locale('vi'); // đặt locale mặc định
 @ApiTags('Booking-service')
 @Controller('booking-service')
 export class BookingItemController {
-  constructor(private readonly bookingItemtService: BookingItemService) {}
+  constructor(private readonly bookingItemService: BookingItemService) {}
 
   @Post('create')
   @ApiOperation({ summary: 'Create booking item' })
@@ -31,7 +31,7 @@ export class BookingItemController {
     @Body() createDto: CreateBookingServiceDto,
   ): Promise<CreatedResponse<BookingItem>> {
     console.log('create', createDto);
-    const newBooking = await this.bookingItemtService.create(createDto);
+    const newBooking = await this.bookingItemService.create(createDto);
 
     return new CreatedResponse({
       message: 'Đặt phòng thành công',
@@ -44,7 +44,7 @@ export class BookingItemController {
   async findByBooking(
     @Param('id') id: string,
   ): Promise<SuccessfullyRespose<BookingItem[]>> {
-    const bookings = await this.bookingItemtService.findByBookinhg(id);
+    const bookings = await this.bookingItemService.findByBooking(id);
 
     return new SuccessfullyRespose({
       message: 'Lấy danh sách booking thành công',
@@ -87,9 +87,9 @@ export class BookingItemController {
     const monthStart = dayjs().startOf('month').toDate();
 
     const [todayStats, weekStats, monthStats] = await Promise.all([
-      this.bookingItemtService.countServicesSoldByType(todayStart, new Date()),
-      this.bookingItemtService.countServicesSoldByType(weekStart, new Date()),
-      this.bookingItemtService.countServicesSoldByType(monthStart, new Date()),
+      this.bookingItemService.countServicesSoldByType(todayStart, new Date()),
+      this.bookingItemService.countServicesSoldByType(weekStart, new Date()),
+      this.bookingItemService.countServicesSoldByType(monthStart, new Date()),
     ]);
 
     return new SuccessfullyRespose({
@@ -110,9 +110,9 @@ export class BookingItemController {
     const monthStart = dayjs().startOf('month').toDate();
 
     const [todayStats, weekStats, monthStats] = await Promise.all([
-      this.bookingItemtService.getTop5ServicesSold(todayStart, new Date()),
-      this.bookingItemtService.getTop5ServicesSold(weekStart, new Date()),
-      this.bookingItemtService.getTop5ServicesSold(monthStart, new Date()),
+      this.bookingItemService.getTop5ServicesSold(todayStart, new Date()),
+      this.bookingItemService.getTop5ServicesSold(weekStart, new Date()),
+      this.bookingItemService.getTop5ServicesSold(monthStart, new Date()),
     ]);
 
     return new SuccessfullyRespose({
@@ -135,7 +135,7 @@ export class BookingItemController {
     console.log('too', too);
     const fromDate = dayjs(from).startOf('day').toDate();
     const toDate = dayjs(too).endOf('day').toDate();
-    const bookings = await this.bookingItemtService.findBookingServiceByDate(
+    const bookings = await this.bookingItemService.findBookingServiceByDate(
       fromDate,
       toDate,
     );
@@ -152,7 +152,7 @@ export class BookingItemController {
     @Param('id') id: string,
     @Body() updateDto: UpdateBookingServiceDto,
   ): Promise<SuccessfullyRespose<BookingItem>> {
-    const updatedBooking = await this.bookingItemtService.update(id, updateDto);
+    const updatedBooking = await this.bookingItemService.update(id, updateDto);
 
     return new SuccessfullyRespose({
       message: 'Cập nhật booking thành công',
@@ -165,7 +165,7 @@ export class BookingItemController {
   async delete(
     @Param('id') id: string,
   ): Promise<SuccessfullyRespose<{ changeTotal: number }>> {
-    const deleted = await this.bookingItemtService.delete(id);
+    const deleted = await this.bookingItemService.delete(id);
 
     return new SuccessfullyRespose({
       message: 'Xóa phòng thành công',
