@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { RoomService } from './room.service';
@@ -17,9 +18,11 @@ import { Room } from './room.entity';
 import { plainToInstance } from 'class-transformer';
 import { searchRoomDto } from './dto/search-room.dto';
 import { RoomType } from '../room-type/room-type.entity';
+import { JWTAuthGuard } from '../auth/passport/jwt-auth.guard';
 
 @ApiTags('Room')
 @Controller('room')
+@UseGuards(JWTAuthGuard)
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 

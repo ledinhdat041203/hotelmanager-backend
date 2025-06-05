@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
@@ -17,9 +18,11 @@ import { Service } from './service.entity';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { SearchServiceDto } from './dto/search-service.dto';
 import { ImportServiceDto } from './dto/import-service.dto';
+import { JWTAuthGuard } from '../auth/passport/jwt-auth.guard';
 
 @ApiTags('Service')
 @Controller('service')
+@UseGuards(JWTAuthGuard)
 export class ServiceController {
   constructor(private readonly serviceService: ServiceService) {}
 

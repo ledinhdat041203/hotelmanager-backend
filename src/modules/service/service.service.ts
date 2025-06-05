@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BadRequestException, NotFoundException } from '@/commons';
+import { BadRequestException, NotFoundException, ServiceType } from '@/commons';
 import { Service } from './service.entity';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateCustomerDto } from '../customer/dto/update-customer.dto';
@@ -55,7 +55,10 @@ export class ServiceService {
       importServiceDto.map(async (item) => {
         const service = await this.findOne(item.serviceId);
         service.quantityInStock += item.quantity;
-        if (service.quantityInStock < 0) {
+        if (
+          service.quantityInStock < 0 &&
+          service.type !== ServiceType.SERVICE
+        ) {
           throw new BadRequestException({
             message: 'Hết hàng trong kho',
           });
