@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CreatedResponse, SuccessfullyRespose } from '@/commons';
@@ -17,11 +18,13 @@ import { BookingItemService } from './booking-service.service';
 import { UpdateBookingServiceDto } from './dto/update-booking-service.dto';
 import * as dayjs from 'dayjs';
 import 'dayjs/locale/vi'; // import tiếng Việt
+import { JWTAuthGuard } from '../auth/passport/jwt-auth.guard';
 
 dayjs.locale('vi'); // đặt locale mặc định
 
 @ApiTags('Booking-service')
 @Controller('booking-service')
+@UseGuards(JWTAuthGuard)
 export class BookingItemController {
   constructor(private readonly bookingItemService: BookingItemService) {}
 

@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { RoomTypeService } from './room-type.service';
@@ -16,9 +17,11 @@ import { RoomType } from './room-type.entity';
 import { CreatedResponse, SuccessfullyRespose } from '@/commons';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { searchRoomTypeDto } from './dto/find-room-type.dto';
+import { JWTAuthGuard } from '../auth/passport/jwt-auth.guard';
 
 @ApiTags('Room Type')
 @Controller('room-type')
+@UseGuards(JWTAuthGuard)
 export class RoomTypeController {
   constructor(private readonly roomTypeService: RoomTypeService) {}
 
